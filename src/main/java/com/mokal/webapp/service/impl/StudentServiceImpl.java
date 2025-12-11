@@ -2,8 +2,10 @@ package com.mokal.webapp.service.impl;
 
 import java.util.List;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import com.mokal.webapp.dto.AddStudentRequestDTO;
 import com.mokal.webapp.dto.StudentDTO;
 import com.mokal.webapp.entity.Student;
 import com.mokal.webapp.respository.StudentRepository;
@@ -16,15 +18,41 @@ import lombok.RequiredArgsConstructor;
 public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
+    private final ModelMapper modelMapper;
+
 
     @Override
     public List<StudentDTO> getAllStudents() {
         List<Student> students = studentRepository.findAll();
         return students
                 .stream()
-                .map(student -> new StudentDTO(student.getId(), student.getName(), student.getEmail()))
+                .map(student -> modelMapper.map(student, StudentDTO.class))
                 .toList();
 
+    }
+
+    @Override
+    public StudentDTO getStudentById(Long id) {
+        Student student = studentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found with id: " + id));
+
+        return modelMapper.map(student, StudentDTO.class);
+    }
+
+    @Override
+    public StudentDTO createNewStudent(AddStudentRequestDTO addStudentRequestDTO) {
+        Student newStudent = modelMapper.map(addStudentRequestDTO, Student.class);
+        Student savedStudent = studentRepository.save(newStudent);
+        return modelMapper.map(savedStudent, StudentDTO.class);
+    }
+
+    @Override
+    public void deleteStudentById(Long id) {
+        if(!studentRepository.existsById(id)) {
+            throw new IllegalArgumentException("Student not found with id: " + id);
+        }
+        studentRepository.deleteById(id);
+    
     }
 
 }
